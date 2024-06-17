@@ -8,7 +8,7 @@ const generateToken = (user) => {
       role: user.role,
       organizationId: user.organizationId,
     },
-    'your_jwt_secret',
+    process.env.JWT_SECRET,
     { expiresIn: '1d' }
   );
 };

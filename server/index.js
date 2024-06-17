@@ -1,29 +1,41 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const { graphqlHTTP } = require('express-graphql');
-const schema = require('./schema');
-const authMiddleware = require('./middleware/auth');
-const cors = require('cors');
+const express = require("express");
+const mongoose = require("mongoose");
+const { graphqlHTTP } = require("express-graphql");
+const schema = require("./schema/schema");
+const { requireAuth } = require('./middleware/auth');
+const cors = require("cors");
+const dotenv = require("dotenv");
 
+dotenv.config();
 // Initialize express app
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/task_management', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose
+  .connect(process.env.MONGO, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("connected to database");
+  })
+  .catch((e) => {
+    console.log(e);
+  });
 
 // Middleware for authentication
-app.use(authMiddleware);
+app.use(requireAuth);
 
 // GraphQL endpoint
-app.use('/graphql', graphqlHTTP({
-  schema,
-  graphiql: true,
-}));
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema,
+    graphiql: true,
+  })
+);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

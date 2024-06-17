@@ -1,18 +1,10 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const mongoose = require("mongoose");
 
-const authMiddleware = async (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-  try {
-    const decoded = jwt.verify(token, 'your_jwt_secret');
-    req.user = await User.findById(decoded.id);
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Failed to authenticate token' });
-  }
-};
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ["Admin", "Manager", "User"], required: true },
+  organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization" },
+});
 
-module.exports = authMiddleware;
+module.exports = mongoose.model("User", userSchema);
