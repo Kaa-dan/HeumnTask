@@ -1,8 +1,14 @@
-const { GraphQLObjectType, GraphQLID, GraphQLString, GraphQLList, GraphQLNonNull } = require('graphql');
+const {
+  GraphQLObjectType,
+  GraphQLID,
+  GraphQLString,
+  GraphQLList,
+  GraphQLNonNull,
+} = require("graphql");
 
 // Organization Type
 const OrganizationType = new GraphQLObjectType({
-  name: 'Organization',
+  name: "Organization",
   fields: () => ({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
@@ -23,7 +29,7 @@ const OrganizationType = new GraphQLObjectType({
 
 // User Type
 const UserType = new GraphQLObjectType({
-  name: 'User',
+  name: "User",
   fields: () => ({
     id: { type: GraphQLID },
     username: { type: GraphQLString },
@@ -45,7 +51,7 @@ const UserType = new GraphQLObjectType({
 
 // Task Type
 const TaskType = new GraphQLObjectType({
-  name: 'Task',
+  name: "Task",
   fields: () => ({
     id: { type: GraphQLID },
     title: { type: GraphQLString },

@@ -11,8 +11,8 @@ const Query = new GraphQLObjectType({
   fields: {
     organizations: {
       type: new GraphQLList(OrganizationType),
-      resolve: (parent, args, { req }) => {
-        if (req.user.role !== 'Admin') {
+      resolve: (parent, args, context) => {
+        if (!context.isAuthenticated || context.user.role !== 'Admin') {
           throw new Error('Unauthorized');
         }
         return Organization.find();
@@ -20,17 +20,20 @@ const Query = new GraphQLObjectType({
     },
     users: {
       type: new GraphQLList(UserType),
-      resolve: (parent, args, { req }) => {
-        if (req.user.role !== 'Admin') {
+      resolve: (parent, args, context) => {
+        if (!context.isAuthenticated || context.user.role !== 'Admin') {
           throw new Error('Unauthorized');
         }
-        return User.find({ organizationId: req.user.organizationId });
+        return User.find({ organizationId: context.user.organizationId });
       },
     },
     tasks: {
       type: new GraphQLList(TaskType),
-      resolve: (parent, args, { req }) => {
-        return Task.find({ organizationId: req.user.organizationId });
+      resolve: (parent, args, context) => {
+        if (!context.isAuthenticated) {
+          throw new Error('Unauthorized');
+        }
+        return Task.find({ organizationId: context.user.organizationId });
       },
     },
   },
@@ -42,8 +45,8 @@ const Mutation = new GraphQLObjectType({
     createOrganization: {
       type: OrganizationType,
       args: { name: { type: new GraphQLNonNull(GraphQLString) } },
-      resolve: (parent, args, { req }) => {
-        if (req.user.role !== 'Admin') {
+      resolve: (parent, args, context) => {
+        if (!context.isAuthenticated || context.user.role !== 'Admin') {
           throw new Error('Unauthorized');
         }
         return new Organization(args).save();
@@ -57,8 +60,8 @@ const Mutation = new GraphQLObjectType({
         role: { type: new GraphQLNonNull(GraphQLString) },
         organizationId: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, args, { req }) => {
-        if (req.user.role !== 'Admin') {
+      resolve: async (parent, args, context) => {
+        if (!context.isAuthenticated || context.user.role !== 'Admin') {
           throw new Error('Unauthorized');
         }
         const hashedPassword = await bcrypt.hash(args.password, 12);
@@ -76,11 +79,14 @@ const Mutation = new GraphQLObjectType({
         userId: { type: new GraphQLNonNull(GraphQLID) },
         organizationId: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: (parent, args, { req }) => {
-        if (req.user.role === 'User' && req.user.id.toString() !== args.userId.toString()) {
+      resolve: (parent, args, context) => {
+        if (!context.isAuthenticated) {
           throw new Error('Unauthorized');
         }
-        if (req.user.role === 'Manager' && req.user.organizationId.toString() !== args.organizationId.toString()) {
+        if (context.user.role === 'User' && context.user.id.toString() !== args.userId.toString()) {
+          throw new Error('Unauthorized');
+        }
+        if (context.user.role === 'Manager' && context.user.organizationId.toString() !== args.organizationId.toString()) {
           throw new Error('Unauthorized');
         }
         return new Task(args).save();
@@ -127,15 +133,18 @@ const Mutation = new GraphQLObjectType({
         status: { type: GraphQLString },
         dueDate: { type: GraphQLString },
       },
-      resolve: async (parent, args, { req }) => {
+      resolve: async (parent, args, context) => {
+        if (!context.isAuthenticated) {
+          throw new Error('Unauthorized');
+        }
         const task = await Task.findById(args.id);
         if (!task) {
           throw new Error('Task not found');
         }
-        if (req.user.role === 'User' && req.user.id.toString() !== task.userId.toString()) {
+        if (context.user.role === 'User' && context.user.id.toString() !== task.userId.toString()) {
           throw new Error('Unauthorized');
         }
-        if (req.user.role === 'Manager' && req.user.organizationId.toString() !== task.organizationId.toString()) {
+        if (context.user.role === 'Manager' && context.user.organizationId.toString() !== task.organizationId.toString()) {
           throw new Error('Unauthorized');
         }
         Object.keys(args).forEach((key) => {
@@ -151,15 +160,18 @@ const Mutation = new GraphQLObjectType({
       args: {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
-      resolve: async (parent, { id }, { req }) => {
+      resolve: async (parent, { id }, context) => {
+        if (!context.isAuthenticated) {
+          throw new Error('Unauthorized');
+        }
         const task = await Task.findById(id);
         if (!task) {
           throw new Error('Task not found');
         }
-        if (req.user.role === 'User' && req.user.id.toString() !== task.userId.toString()) {
+        if (context.user.role === 'User' && context.user.id.toString() !== task.userId.toString()) {
           throw new Error('Unauthorized');
         }
-        if (req.user.role === 'Manager' && req.user.organizationId.toString() !== task.organizationId.toString()) {
+        if (context.user.role === 'Manager' && context.user.organizationId.toString() !== task.organizationId.toString()) {
           throw new Error('Unauthorized');
         }
         await task.remove();

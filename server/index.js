@@ -26,16 +26,22 @@ mongoose
   });
 
 // Middleware for authentication
-app.use(requireAuth);
+// app.use(requireAuth);
 
-// GraphQL endpoint
-app.use(
-  "/graphql",
-  graphqlHTTP({
+// Public GraphQL endpoint (no auth required)
+app.use('/graphql/public', graphqlHTTP({
     schema,
     graphiql: true,
-  })
-);
+    context: { isAuthenticated: false }
+  }));
+
+  // Protected GraphQL endpoint (auth required)
+app.use('/graphql/protected', requireAuth, graphqlHTTP({
+    schema,
+    graphiql: true,
+    context: (req) => ({ isAuthenticated: true, user: req.user })
+  }));
+  
 
 // Start the server
 const PORT = process.env.PORT || 5000;
