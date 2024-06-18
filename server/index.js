@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const { graphqlHTTP } = require("express-graphql");
 const schema = require("./schema/schema");
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth } = require("./middleware/auth");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
@@ -29,19 +29,34 @@ mongoose
 // app.use(requireAuth);
 
 // Public GraphQL endpoint (no auth required)
-app.use('/graphql/public', graphqlHTTP({
+app.use(
+  "/graphql/public",
+  graphqlHTTP((req) => ({
     schema,
     graphiql: true,
-    context: { isAuthenticated: false }
-  }));
+    context: {
+      req,
+      isAuthenticated: false,
+      organizationLoader,
+    },
+  }))
+);
 
-  // Protected GraphQL endpoint (auth required)
-app.use('/graphql/protected', requireAuth, graphqlHTTP({
+// Protected GraphQL endpoint (auth required)
+app.use(
+  "/graphql/protected",
+  requireAuth,
+  graphqlHTTP((req) => ({
     schema,
     graphiql: true,
-    context: (req) => ({ isAuthenticated: true, user: req.user })
-  }));
-  
+    context: {
+      req,
+      isAuthenticated: true,
+      user: req.user,
+      organizationLoader,
+    },
+  }))
+);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
